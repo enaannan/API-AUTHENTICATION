@@ -1,5 +1,6 @@
 const User = require("../model/User")
 const bcrypt = require("bcryptjs")
+const jwt = require('jsonwebtoken')
 
 // Register a User
 exports.register = async (req, res, next) => {
@@ -12,16 +13,35 @@ exports.register = async (req, res, next) => {
     try {
         // note: explain hashing with salt
         const saltRounds = 10;
-        bcrypt.hash(password, saltRounds).then(
+        bcrypt.hash(password, saltRounds)
+        
+        //Add user to db 
+        .then(
             async (hash) => {
                 await User.create({
                 username,
                 password: hash,
-              }).then(user =>
-                res.status(200).json({
-                  message: "User successfully created",
-                  user,
-                })
+              })
+              
+              // sign jwt and send back to client 
+              .then((user) =>
+                {
+                  const maxAge = 3 * 60 * 60; // 3hrs in sec
+                  const token = jwt.sign(
+                    { id: user._id, username, role: user.role }, 
+                    jwtSecret,
+                    {expiresIn: maxAge, }
+                  );
+                  res.cookie("jwt", token, {
+                    secure: true,
+                    maxAge: maxAge * 1000, // 3hrs in ms
+                  });
+
+                  res.status(200).json({
+                    message: "User successfully created",
+                    user,
+                  })
+                }
               )
                 }
         ); 
