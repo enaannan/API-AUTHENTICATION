@@ -2,9 +2,12 @@ const User = require("../model/User")
 const bcrypt = require("bcryptjs")
 const jwt = require('jsonwebtoken')
 
+// read env variables from config file
+const { jwtsecret } = require('../config');
+
 // Register a User
 exports.register = async (req, res, next) => {
-    const { username, password } = req.body
+    const { username, password, role } = req.body
 
     // simple validation of password length
     if (password.length < 6) {
@@ -18,22 +21,23 @@ exports.register = async (req, res, next) => {
         //Add user to db 
         .then(
             async (hash) => {
-                await User.create({
-                username,
-                password: hash,
-              })
-              
+                 await User.create({
+                  username,
+                  password: hash,
+                  role,
+                })
               // sign jwt and send back to client 
               .then((user) =>
                 {
                   const maxAge = 3 * 60 * 60; // 3hrs in sec
                   const token = jwt.sign(
                     { id: user._id, username, role: user.role }, 
-                    jwtSecret,
+                    jwtsecret,
                     {expiresIn: maxAge, }
                   );
                   res.cookie("jwt", token, {
                     secure: true,
+                    httpOnly: true,
                     maxAge: maxAge * 1000, // 3hrs in ms
                   });
 
@@ -67,18 +71,33 @@ exports.login = async (req, res, next) => {
         // find user in db
         const user = await User.findOne({ username })
         if (!user) {
+
+          const maxAge = 3 * 60 * 60; // 3hrs in sec
+          const token = jwt.sign(
+            { id: user._id, username, role: user.role }, 
+            jwtsecret,
+            {expiresIn: maxAge, }
+          );
+          res.cookie("jwt", token, {
+            secure: true,
+            httpOnly: true,
+            maxAge: maxAge * 1000, // 3hrs in ms
+          });
+
           res.status(401).json({
             message: "Login not successful",
             error: "User not found",
           })
         } else {
             bcrypt.compare(password, user.password).then(function (result) {
-                result
-                  ? res.status(200).json({
-                      message: "Login successful",
-                      user,
-                    })
-                  : res.status(400).json({ message: "Login not succesful" })
+              if(result){
+                res.status(200).json({
+                  message: "Login successful",
+                  user,
+                })
+              }else{
+                res.status(400).json({ message: "Login not succesful" })
+              }
               })
             }
       } catch (error) {
@@ -96,10 +115,10 @@ exports.update = async (req, res, next) => {
     // simple validation to ensure role and id not empty
     if (role && id) {
       // Verifying if the value of role is admin
-      if (role === "admin") {
+      if (role === "Admin") {
         await User.findById(id).then((user) => {
             // check if found user does not already have role of admin
-            if (user.role !== "admin") {
+            if (user.role !== "Admin") {
               user.role = role;
               user.save((err) => {
                 //executes if there is a mongo db error

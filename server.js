@@ -20,6 +20,9 @@ app.use("/api/auth", require("./Auth/Route"));
 
 app.get("/admin", adminJWTAuth, (req, res) => res.send("Admin Route"));
 app.get("/basic", userJWTAuth, (req, res) => res.send("User Route"));
+app.get("/logout", (req, res) => {res.cookie("jwt", "", { maxAge: "1" })
+res.redirect("/")
+})
 
 
 //Connecting the Database

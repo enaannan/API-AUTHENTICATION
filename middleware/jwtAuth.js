@@ -10,7 +10,7 @@ exports.adminJWTAuth = (req, res, next) => {
       if (err) {
         return res.status(401).json({ message: "Not authorized" })
       } else {
-        if (decodedToken.role !== "admin") {
+        if (decodedToken.role !== "Admin") {
           return res.status(401).json({ message: "Not authorized" })
         } else {
           next()
