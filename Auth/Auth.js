@@ -32,12 +32,12 @@ exports.register = async (req, res, next) => {
                   const maxAge = 3 * 60 * 60; // 3hrs in sec
                   const token = jwt.sign(
                     { id: user._id, username, role: user.role }, 
-                    jwtsecret,
+                    jwtsecret, // used crypto lib 
                     {expiresIn: maxAge, }
                   );
                   res.cookie("jwt", token, {
-                    secure: true,
-                    httpOnly: true,
+                    secure: true, // cookie is sent only via http
+                    httpOnly: true, // prevents scripts from browser from reading cookie
                     maxAge: maxAge * 1000, // 3hrs in ms
                   });
 
@@ -71,19 +71,6 @@ exports.login = async (req, res, next) => {
         // find user in db
         const user = await User.findOne({ username })
         if (!user) {
-
-          const maxAge = 3 * 60 * 60; // 3hrs in sec
-          const token = jwt.sign(
-            { id: user._id, username, role: user.role }, 
-            jwtsecret,
-            {expiresIn: maxAge, }
-          );
-          res.cookie("jwt", token, {
-            secure: true,
-            httpOnly: true,
-            maxAge: maxAge * 1000, // 3hrs in ms
-          });
-
           res.status(401).json({
             message: "Login not successful",
             error: "User not found",
